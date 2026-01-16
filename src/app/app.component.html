@@ -1,0 +1,125 @@
+<div class="container">
+  <header class="header">
+    <h1>📄 PDF Manager</h1>
+    <p>Merge, reorder, and preview your PDF files</p>
+  </header>
+
+  <main class="main-content">
+    <!-- Upload Area -->
+    <section 
+      class="upload-area" 
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+      [class.drag-over]="dragOver">
+      
+      <div class="upload-content">
+        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <h2>Drop PDF or image files here or click to upload</h2>
+        <p>Upload 2 or more PDF/image files to merge them (images will be converted to PDF)</p>
+        <button class="btn btn-primary" (click)="triggerFileInput()" [disabled]="isLoading">
+          {{ isLoading ? 'Loading...' : 'Browse Files' }}
+        </button>
+      </div>
+      
+      <input 
+        #fileInput
+        type="file" 
+        multiple 
+        accept=".pdf,application/pdf,.jpg,.jpeg,.png,.gif,.bmp,.webp,image/*"
+        (change)="onFileSelected($event)"
+        hidden>
+    </section>
+
+    <!-- PDF List -->
+    <section class="pdf-list-section" *ngIf="pdfItems.length > 0">
+      <div class="section-header">
+        <h3>Uploaded PDFs ({{ pdfItems.length }})</h3>
+        <div class="actions">
+          <button class="btn btn-secondary" (click)="clearAll()">Clear All</button>
+        </div>
+      </div>
+
+      <div 
+        cdkDropList
+        #pdfList="cdkDropList"
+        [cdkDropListData]="pdfItems"
+        (cdkDropListDropped)="drop($event)"
+        class="pdf-grid">
+        
+        <div 
+          *ngFor="let item of pdfItems; let i = index"
+          cdkDrag
+          class="pdf-card">
+          
+          <div class="pdf-header">
+            <span class="drag-handle">⋮⋮</span>
+            <span class="pdf-index">{{ i + 1 }}</span>
+            <button class="btn-close" (click)="removePdf(item.id)">×</button>
+          </div>
+
+          <div class="pdf-preview" *ngIf="item.thumbnail">
+            <img [src]="item.thumbnail" alt="PDF Thumbnail" class="thumbnail">
+          </div>
+
+          <div class="pdf-details">
+            <p class="pdf-name" [title]="item.name">{{ item.name }}</p>
+            <p class="pdf-pages" *ngIf="item.pageCount">
+              {{ item.pageCount }} page<span *ngIf="item.pageCount !== 1">s</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Merge Controls -->
+      <div class="merge-controls">
+        <div class="compression-section">
+          <label for="compression">Compression Level:</label>
+          <select id="compression" [(ngModel)]="compressionLevel" class="compression-select">
+            <option [value]="0">No Compression (Faster)</option>
+            <option [value]="1">Medium Compression</option>
+            <option [value]="2">High Compression (Slower)</option>
+          </select>
+          <span class="compression-hint" *ngIf="compressionLevel > 0">
+            {{ compressionLevel === 1 ? '📊 Medium' : '📉 High' }} - Smaller file size
+          </span>
+        </div>
+        
+        <button 
+          class="btn btn-success btn-large" 
+          (click)="mergePdfs()"
+          [disabled]="isMerging || pdfItems.length < 2">
+          {{ isMerging ? 'Merging...' : '🔗 Merge PDFs' }}
+        </button>
+      </div>
+    </section>
+
+    <!-- Merged Result -->
+    <section class="merged-section" *ngIf="mergedPdfUrl">
+      <div class="section-header">
+        <h3>✓ Merge Complete!</h3>
+      </div>
+
+      <div class="merged-actions">
+        <button class="btn btn-success" (click)="downloadMergedPdf()">
+          ⬇️ Download Merged PDF
+        </button>
+        <button class="btn btn-info" (click)="togglePreview()">
+          {{ showPreview ? '🙈 Hide Preview' : '👁️ Preview' }}
+        </button>
+      </div>
+
+      <div class="pdf-preview-container" *ngIf="showPreview">
+        <iframe 
+          [src]="mergedPdfUrl | safe" 
+          class="pdf-viewer"
+          title="Merged PDF Preview">
+        </iframe>
+      </div>
+    </section>
+  </main>
+</div>
